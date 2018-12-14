@@ -1,49 +1,49 @@
 //linkedset.h
 //Created by Croper
-//last modified in Dec.12.2018
+//last modified in Dec.13.2018
 //以链表形式储存的集合
 
 #pragma once
-#include "LinkedList.h"
+#include "linkedlist.h"
 
 template <typename T> class linkedset;
 
-template <typename T> class linkedset :public linkedlist<T>
+template <typename T> class linkedset :private linkedlist<T>
 {
-    template <typename T> friend bool operator<(const T&, linkedset<T>&);
-	template <typename T> friend bool operator>(const T&, linkedset<T>&);
+    template <typename T> friend const bool operator<(const T&,const linkedset<T>&);
+	template <typename T> friend const bool operator>(const T&,const linkedset<T>&);
 public:
-	linkedset() {}
-	linkedset(std::initializer_list<T> initlist);
+	linkedset() {}                                          //构造函数
+	linkedset(const std::initializer_list<T>&);             //构造函数
 
-	bool Add(T&);    //添加一个元素,返回是否添加成功
-	template <typename TArr> void AddArr(TArr&); //添加数组内的多个元素
-	bool Remove(T&); //删除一个元素，返回是否删除成功
-	T& Top();         //返回第一个元素的指针，如果为空会报错
-	T& Buttom();         //返回第最后元素的指针，如果为空会报错
-	T& Ele(int);         //返回某一个元素的指针，如果为空会报错
+	const bool empty() const;
+	const int count() const;                              //返回集合的大小
+	const T&  top() const;                                //返回第一个元素，如果为空会报错
+	const T&  buttom() const;                             //返回第最后元素，如果为空会报错
+	const T&  ele(int) const;                             //返回某一个元素，如果为空会报错
 
-	int count();       //返回集合的大小
-	bool empty();       //是否为空
+	const bool Add(const T&);                           //添加一个元素,返回是否添加成功
+	template <typename TArr> void AddArr(const TArr&);  //添加数组内的多个元素
+	const bool Remove(const T&);                        //删除一个元素，返回是否删除成功
 
-	void operator=(std::initializer_list<T> initlist);
+	void operator=(const std::initializer_list<T>&);     //使用初始化表复制
 
-	bool operator==(linkedset<T>&);    //两集合是否相等;
-	bool operator!=(linkedset<T>&);    //两集合不相等;
-	bool operator<(linkedset<T>&);     //是否是真子集
-	bool operator<=(linkedset<T>&);    //是否是子集
-	bool operator>(linkedset<T>&);     //是否是真父集
-	bool operator>=(linkedset<T>&);     //是否是父集
+	const bool operator==(const linkedset<T>&) const;     //两集合是否相等;
+	const bool operator!=(const linkedset<T>&) const;     //两集合不相等;
+	const bool operator<(const linkedset<T>&)  const;     //是否是真子集
+	const bool operator<=(const linkedset<T>&) const;     //是否是子集
+	const bool operator>(const linkedset<T>&)  const;     //是否是真父集
+	const bool operator>=(const linkedset<T>&) const;     //是否是父集
 
-	linkedset<T>& operator+(linkedset<T>&);      //求并集
-	linkedset<T>& operator-(linkedset<T>&);      //求相对补集
+	linkedset<T>& operator+(const linkedset<T>&)const;      //求并集
+	linkedset<T>& operator-(const linkedset<T>&)const;      //求相对补集
 
-	linkedset<T>& operator&&(linkedset<T>&);     //求并集
-	linkedset<T>& operator||(linkedset<T>&);     //求交集
+	linkedset<T>& operator&&(const linkedset<T>&)const;     //求并集
+	linkedset<T>& operator||(const linkedset<T>&)const;     //求交集
 };
 
 
-template <typename T> linkedset<T>::linkedset(std::initializer_list<T> initlist)
+template <typename T> linkedset<T>::linkedset(const std::initializer_list<T>& initlist)
 {
 	for (auto pt = initlist.begin(); pt != initlist.end(); pt++)
 	{
@@ -51,32 +51,32 @@ template <typename T> linkedset<T>::linkedset(std::initializer_list<T> initlist)
 	}
 }
 
-template <typename T> bool operator<(T& t, linkedset<T>& set)
+template <typename T> const bool operator<(const T& t, const linkedset<T>& set)
 {
 	for (int i = 0; i < set.count(); i++)
 	{
-		if (t == set.Value(i)) return true;
+		if (t == set.ele(i)) return true;
 	}
 	return false;
 }
 
-template <typename T> bool operator>(T& t, linkedset<T>& set)
+template <typename T> const bool operator>(const T& t,const linkedset<T>& set)
 {
 	for (int i = 0; i < set.count(); i++)
 	{
-		if (t == set.Value(i)) return false;
+		if (t == set.ele(i)) return false;
 	}
 	return true;
 }
 
-template <typename T> bool linkedset<T>::Add(T& t) //添加一个元素,返回是否添加成功
+template <typename T> const bool linkedset<T>::Add(const T& t) //添加一个元素,返回是否添加成功
 {
 	if (t < (*this)) return false;
-    this->Append(t);
+	linkedlist<T>::Append(t);
 	return true;
 }
 
-template <typename T> template <typename TArr> void linkedset<T>::AddArr(TArr& Arr)
+template <typename T> template <typename TArr> void linkedset<T>::AddArr(const TArr& Arr)
 {
 	int n = sizeof(Arr) / sizeof(Arr[0]);
 	for (int i = 0; i < n; i++)
@@ -84,13 +84,13 @@ template <typename T> template <typename TArr> void linkedset<T>::AddArr(TArr& A
 		Add(Arr[i]);
 	}
 }
-template <typename T> bool linkedset<T>::Remove(T& t) //删除一个元素，返回是否删除成功
+template <typename T>  const bool linkedset<T>::Remove(const T& t) //删除一个元素，返回是否删除成功
 {
 	for (int i = 0; i < count(); i++)
 	{
-		if (t == this->Value(i))
+		if (t == ele(i))
 		{
-			this->Delete(i);
+			linkedlist<T>::Delete(i);
 			return true;
 		}
 	}
@@ -98,32 +98,30 @@ template <typename T> bool linkedset<T>::Remove(T& t) //删除一个元素，返回是否删
 }
 
 
-template <typename T> T& linkedset<T>::Top()        //返回第一个元素，如果为空会报错
+template <typename T> const T& linkedset<T>::top() const           //返回第一个元素，如果为空会报错
 {
-	return this->Value(0);
+	return this->head();
 }
-template <typename T> T& linkedset<T>::Buttom()        //返回第一个元素，如果为空会报错
+template <typename T> const T& linkedset<T>::buttom() const        //返回最后一个元素，如果为空会报错
 {
-	return this->Value(count());
+	return this->tail();
 }
-template <typename T> T& linkedset<T>::Ele(int i)        //返回第一个元素，如果为空会报错
+template <typename T> const T& linkedset<T>::ele(int i)  const      //返回某一个元素，如果为空会报错
 {
-	return this->Value(i);
-}
-
-
-template <typename T> int linkedset<T>::count()       //返回集合的大小
-{
-	return this->Length();
+	return this->value(i);
 }
 
-template <typename T> inline bool linkedset<T>::empty()
+template <typename T> const bool linkedset<T>::empty() const
 {
-	return (count() == 0);
+	return linkedlist<T>::empty();
 }
 
+template <typename T>  const int linkedset<T>::count() const       //返回集合的大小
+{
+	return this->length();
+}
 
-template <typename T> void linkedset<T>::operator=(std::initializer_list<T> initlist)
+template <typename T> void linkedset<T>::operator=(const std::initializer_list<T>& initlist)
 {
 	this->Clear();
 	T tTemp;
@@ -134,108 +132,108 @@ template <typename T> void linkedset<T>::operator=(std::initializer_list<T> init
 	}
 }
 
-template <typename T> bool linkedset<T>::operator==(linkedset<T>& set)    //两集合是否相等;
+template <typename T>  const bool linkedset<T>::operator==(const linkedset<T>& set) const    //两集合是否相等;
 {
 	if (count() != set.count()) return false;
 	for (int i = 0; i <= count(i); i++)
 	{
-		if (Value(i) > set) return false;
+		if (ele(i) > set) return false;
 	}
 	return true;
 }
 
-template <typename T> inline bool linkedset<T>::operator!=(linkedset<T>& set)    //两集合是否相等;
+template <typename T> inline  const bool linkedset<T>::operator!=(const linkedset<T>& set) const    //两集合是否相等;
 {
 	return (!operator==(set));
 }
 
-template <typename T> bool  linkedset<T>::operator<(linkedset<T>& set)     //是否是真子集
+template <typename T>  const bool linkedset<T>::operator<(const linkedset<T>& set) const     //是否是真子集
 {
 	if (count() >= set.count()) return false;
 	for (int i = 0; i <= count(i); i++)
 	{
-		if (Value(i) > set) return false;
+		if (ele(i) > set) return false;
 	}
 	return true;
 }
 
-template <typename T> bool  linkedset<T>::operator<=(linkedset<T>& set)    //是否是子集
+template <typename T> const bool  linkedset<T>::operator<=(const linkedset<T>& set)const     //是否是子集
 {
 	if (count() > set.count()) return false;
 	for (int i = 0; i < count(); i++)
 	{
-		if (this->Value(i) > set) return false;
+		if (ele(i) > set) return false;
 	}
 	return true;
 }
-template <typename T> bool  linkedset<T>::operator>(linkedset<T>& set)     //是否是真父集
+template <typename T> const bool  linkedset<T>::operator>(const linkedset<T>& set)const      //是否是真父集
 {
 	if (count() <= set.count()) return false;
 	for (int i = 0; i < set.count(); i++)
 	{
-		if (set.Value(i) > (*this)) return false;
+		if (set.value(i) > (*this)) return false;
 	}
 	return true;
 }
-template <typename T> bool  linkedset<T>::operator>=(linkedset<T>& set)     //是否是父集
+template <typename T> const bool  linkedset<T>::operator>=(const linkedset<T>& set) const     //是否是父集
 {
 	if (count() < set.count()) return false;
 	for (int i = 0; i < set.count(i); i++)
 	{
-		if (set.Value(i) > (*this)) return false;
+		if (set.value(i) > (*this)) return false;
 	}
 	return true;
 }
 
-template <typename T>  linkedset<T>& linkedset<T>::operator+(linkedset<T>& set)      //求并集
+template <typename T>  linkedset<T>& linkedset<T>::operator+(const linkedset<T>& set)const       //求并集
 {
 	static linkedset<T> ans;
 	ans = set;
 	for (int i = 0; i < count(); i++)
 	{
-		if (Value(i) > ans)
+		if (value(i) > ans)
 		{
-			ans.Add(Value(i));
+			ans.Add(value(i));
 		}
 	}
 	return ans;
 }
-template <typename T>  linkedset<T>& linkedset<T>::operator-(linkedset<T>& set)      //求相对补集
+template <typename T>  linkedset<T>& linkedset<T>::operator-(const linkedset<T>& set) const      //求相对补集
 {
 	static linkedset<T> ans;
 	ans = *this;
 	for (int i = 0; i < set.length(); i++)
 	{
-		if (set.Value(i) < ans)
+		if (set.value(i) < ans)
 		{
-			ans.Delete(Value(i));
+			ans.Delete(value(i));
 		}
 	}
 	return ans;
 }
 
-template <typename T>  linkedset<T>& linkedset<T>::operator&&(linkedset<T>& set)     //求并集
+template <typename T> linkedset<T>& linkedset<T>::operator&&(const linkedset<T>& set) const     //求并集
 {
 	static linkedset<T> ans;
 	ans = set;
 	for (int i = 0; i < count(); i++)
 	{
-		if (this->Value(i) > set)
+		if (ele(i) > set)
 		{
-			ans.Add(this->Value(i));
+			ans.Add(ele(i));
 		}
 	}
 	return ans;
 }
-template <typename T>  linkedset<T>& linkedset<T>::operator|| (linkedset<T>& set)     //求交集
+template <typename T> linkedset<T>& linkedset<T>::operator|| (const linkedset<T>& set) const     //求交集
 {
 	static linkedset<T> ans;
 	ans = set;
 	for (int i = 0; i < set.count(); i++)
 	{
-		if (set.Value(i)>*this)
+		if (set.value(i)>*this)
 		{
-			ans.Remove(set.Value(i));
+			ans.Remove(set.value(i));
 		}
 	}
 	return ans;
