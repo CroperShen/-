@@ -13,9 +13,6 @@
 #include "doublepointer.h"
 #include "linkedlist.h"
 
-using std::stack;
-using std::queue;
-
 enum Childpos{ pos_left = 0,pos_right=1,pos_root=2,pos_def=-1};
 enum TreeOrder{order_pre,order_in,order_post,order_level,order_def=order_level};
 
@@ -57,7 +54,6 @@ private:
 
 	BinaryTreeNode<T>& operator=(T&);                   //重载赋值符号，直接对Data赋值，等同于setData
 	BinaryTreeNode<T>& operator=(BinaryTreeNode<T>&);   
-
 
 	void SetValue(T&);                                         //设置值 
 
@@ -248,7 +244,7 @@ template <typename T> inline BinaryTreeNode<T>* BinaryTreeNode<T>::rightSibing()
 template <typename T> inline BinaryTree<T>* BinaryTreeNode<T>::tree() const                             //返回所在的树
 {
 	const BinaryTreeNode<T> *p = this;
-	while (p->Parent == NULL) p = p->Parent;
+	while (p->Parent != NULL) p = p->Parent;
 	return p->Tree;
 }
 
@@ -544,15 +540,23 @@ template <typename T> BinaryTree<T>::BinaryTree()                               
 
 template <typename T> BinaryTree<T>::BinaryTree(const BinaryTree<T>& tree)                //复制构造函数
 {                                                                   
+	
+	if (tree.Root == NULL) //如果tree为空树则创建一个空树     
+	{
+		Order = tree.Order;
+		Root = NULL;
+		WellOrdered = true;
+		Size = 0;
+		return;
+	}
+	new(this)BinaryTree<T>(*tree.root());                                            //根据tree的根节点创建子树
 	Order = tree.Order;
-	Root = NULL;
-	if (tree.Root == NULL) return;                                          //如果tree为空树则创建一个空树                          
-	BinaryTree<T>(*tree.root());                                            //根据tree的根节点创建子树
 }
 
 template <typename T> BinaryTree<T>::BinaryTree(const std::initializer_list<T>& list)     //根据初始化表构造完全二叉树
 {
 	//创建的为完全二叉树
+	BinaryTree<T>*p1 = this;  //可用时删除
 	BinaryTreeNode<T> *Node;
 	Size = list.size();
 	Order = order_def;
@@ -563,10 +567,12 @@ template <typename T> BinaryTree<T>::BinaryTree(const std::initializer_list<T>& 
 	auto p = list.begin();
 	for (int i=0; i < Size; i++)
 	{
-		Node[i].SetValue((T)p[i]);
-		if (2 * i + 1 < Size) Node[i].SetLeftChild(Node[2 * i + 1]);
-		if (2 * i + 2 < Size) Node[i].SetRightChild(Node[2 * i + 2]);
+		Node[i].SetValue((T&)p[i]);
+		if (2 * i + 1 < Size) Node[i].SetLeftChild(&(Node[2 * i + 1]));          //to change
+		if (2 * i + 2 < Size) Node[i].SetRightChild(&(Node[2 * i + 2]));
 	}
+	this->Root = Node;
+	WellOrdered = false;
 }
 
 template <typename T> BinaryTree<T>::BinaryTree(const linkedlist<T>& list)                 //根据链表构造完全二叉树
@@ -585,6 +591,8 @@ template <typename T> BinaryTree<T>::BinaryTree(const linkedlist<T>& list)      
 		if (2 * i + 1 < Size) Node[i].SetLeftChild(Node[2 * i + 1]);
 		if (2 * i + 2 < Size) Node[i].SetRightChild(Node[2 * i + 2]);
 	}
+	this->Root = Node;
+	WellOrdered = false;
 }
 
 template <typename T> BinaryTree<T>::BinaryTree(BinaryTreeNode<T>& Node)             //根据节点及其子节点创建树
@@ -595,6 +603,7 @@ template <typename T> BinaryTree<T>::BinaryTree(BinaryTreeNode<T>& Node)        
 	Root = new BinaryTreeNode<T>(Node);                       //首先复制根节点
 	p.p1 = &Node;
 	p.p2 = Root;
+	Root->Tree = this;
 	do
 	{
 		if (p.p1->RightChild != NULL)
@@ -620,6 +629,8 @@ template <typename T> BinaryTree<T>::BinaryTree(BinaryTreeNode<T>& Node)        
 			}
 		}
 	} while ((p.p1 != NULL) || (!stk.empty()));
+
+	WellOrdered = false;
 }
 
 template <typename T> BinaryTree<T>::~BinaryTree()                                   //析构函数
@@ -653,6 +664,7 @@ template <typename T> void BinaryTree<T>::DoOrder()                             
 			if (p->LeftChild != NULL) que.push(p->LeftChild);
 			if (p->RightChild != NULL) que.push(p->RightChild);
 		}
+		break;
 	case order_pre:
 		p = Root;
 		while (p!=NULL)
@@ -671,6 +683,7 @@ template <typename T> void BinaryTree<T>::DoOrder()                             
 				stk.pop();
 			}
 		}
+		break;
 	case order_in:
 		p = Root;
 		do
@@ -689,7 +702,7 @@ template <typename T> void BinaryTree<T>::DoOrder()                             
 			Size++;
 			p = p->RightChild;
 		}while ((p != NULL) || (!stk.empty()));
-
+		break;
 	case order_post:                 //后序可视为镜像后的前序再进行翻转；正常后序写法太麻烦
 		p = Root;
 		while (p != NULL)
@@ -712,6 +725,7 @@ template <typename T> void BinaryTree<T>::DoOrder()                             
 		{
 			OrderList.value(i)->Order = i;
 		}
+		break;
 	}
 
 	WellOrdered = true;
@@ -752,7 +766,7 @@ template <typename T> BinaryTreeNode<T> *BinaryTree<T>::node(int i)       //默认
 template <typename T> const T& BinaryTree<T>::value(int i)
 {
 	if (WellOrdered == false) DoOrder();
-	return OrderList->value(i)->Value;
+	return OrderList.value(i)->Value;
 }
 
 
@@ -783,10 +797,10 @@ template <typename T> inline TreeOrder BinaryTree<T>::treeorder() const
 {
 	return Order;
 }
-template <typename T> void BinaryTree<T>::SetTreeOrder(const TreeOrder)
+template <typename T> void BinaryTree<T>::SetTreeOrder(const TreeOrder Order1)
 {
-	if (Order == TreeOrder) return;
-	Order = TreeOrder;
+	if (Order == Order1) return;
+	Order = Order1;
 	WellOrdered = false;
 }
 template <typename T> void BinaryTree<T>::ForTree(void(*func1)(BinaryTreeNode<T>&))    //根据设定次序周游 
