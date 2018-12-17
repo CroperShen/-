@@ -1,10 +1,12 @@
 //linkedlist.h
 //Created by CroperShen
-//Last modified in Dec.15.2018
+//Last modified in Dec.17.2018
 //Á´±í½á¹¹£¬Á·Ï°Ö®×ö
 
 #pragma once
 #include <initializer_list>
+#include "cprlib.h"
+#define _LINKEDLIST_H
 
 //ÉùÃ÷Àà
 template <typename T> class link;                  //Á´±í½Úµã
@@ -39,7 +41,6 @@ private:
 	int l;    //³¤¶È
 protected:
 	link<T> *pNode(int);                     //»ñÈ¡Ö¸¶¨½Úµã£¬ÏŞÖÆÉÏÏÂÏŞ(·µ»ØNULL)
-	const link<T> *pNode(int) const;
 	link<T> *pHead();
 	link<T> *pTail();
 public:
@@ -52,6 +53,8 @@ public:
 	virtual void operator=(const linkedlist<T>&);                 //ÖØÔØ¸³Öµ Ê¹Æä±äÎª¸´ÖÆ
 	virtual const bool operator==(const linkedlist<T>&) const;    //Á´±íÏàµÈ£¬Ö»ÓĞÔÚÁ´±íÃ¿Ò»¸öÔªËØ¶¼ÍêÈ«ÏàÍ¬Ê±²ÅÏàµÈ;
 	virtual const bool operator!=(const linkedlist<T>&) const ;   //Á´±í²»ÏàµÈ;
+	virtual T& operator[](int);                                   //ÖØÔØÏÂ±ê·ûºÅ£¬ÄÜÖ±½ÓÏñÊı×éÒ»ÑùÊ¹ÓÃ
+
 
 	const bool empty() const;            //ÊÇ·ñÊÇ¿ÕÁ´±í
 	const int size() const;              //»ñÈ¡Á´±í³¤¶È
@@ -61,7 +64,9 @@ public:
 
 
 	link<T>& Append(const T&);             //ÓÚÎ²²¿Ìí¼ÓÒ»¸öÖµ£¬·µ»ØÌí¼ÓÖµµÄ½Úµã
-	link<T>& Insert(const T&,int);         //ÓÚ¸ø¶¨Î»ÖÃÌí¼ÓÒ»¸öÖµ£¬ÆäËûÖµË³ÑÓ£¬·µ»ØÌí¼ÓÖµµÄ½Úµã
+	link<T>& Append();                     //ÓÚÎ²²¿Ìí¼ÓÒ»¸öÖµ£¬·µ»ØÌí¼ÓÖµµÄ½Úµã
+	link<T>& Insert(const T& ,int);        //ÓÚ¸ø¶¨Î»ÖÃÌí¼ÓÒ»¸öÖµ£¬ÆäËûÖµË³ÑÓ£¬·µ»ØÌí¼ÓÖµµÄ½Úµã
+	link<T>& Insert(int);        //ÓÚ¸ø¶¨Î»ÖÃÌí¼ÓÒ»¸öÖµ£¬ÆäËûÖµË³ÑÓ£¬·µ»ØÌí¼ÓÖµµÄ½Úµã
 	link<T>& SetHead(const T&);            //¸Ä±äÍ·½ÚµãÖµ
 	link<T>& SetTail(const T&);            //¸Ä±äÎ²½ÚµãµÄÖµ
 	link<T>& SetValue(int,const T&);       //¸Ä±ä¸ø¶¨Î»ÖÃµÄÖµ
@@ -78,9 +83,6 @@ public:
 //ÉùÃ÷½áÊø
 
 //========================================================================================================
-
-#define min(a,b) ((a)>(b))?(b):(a)
-#define max(a,b) ((a)>(b))?(a):(b)
 
 //ÒÔÏÂÊÇlink<T>£¨Á´±í½Úµã)µÄº¯Êı¶¨Òå
 template <typename T> link<T>::link()              //¹¹Ôìº¯Êı
@@ -270,10 +272,50 @@ template <typename T> link<T>& linkedlist<T>::Append(const T& data)          //Ó
 	l++;
 	return *p;
 }
+
+template <typename T> link<T>& linkedlist<T>::Append()          //ÓÚÎ²²¿Ìí¼ÓÒ»¸öÖµÎªÄ¬ÈÏµÄ½Úµã
+{
+	link<T> *p = new link<T>;
+	p->PreNode = headernode->PreNode;
+	p->NextNode = headernode;
+	headernode->PreNode->NextNode = p;
+	headernode->PreNode = p;
+
+	l++;
+	return *p;
+}
 //----------------------
 template <typename T> link<T>& linkedlist<T>::Insert(const T& data,int i)   //ÓÚ¸ø¶¨Î»ÖÃÌí¼ÓÒ»¸öÖµ£¬ÆäËûÖµË³ÑÓ
 {
 	link<T> *p = new link<T>(data);
+	link<T> *pPre;
+
+	int z = size() - 1;
+	int x = 0;
+	i = min(z, max(x, i));                //i±ØĞëÎ»ÓÚ0µ½×î´ó³¤¶È-1Ö®¼ä
+
+	if (i == 0)
+	{
+		pPre = headernode;
+	}
+	else
+	{
+		pPre = pNode(i - 1);
+	}
+
+	p->PreNode = pPre;
+	p->NextNode = pPre->NextNode;
+
+	p->PreNode->NextNode = p;
+	p->NextNode->PreNode = p;
+
+	l++;                                          //³¤¶È+1
+	return *p;
+}
+
+template <typename T> link<T>& linkedlist<T>::Insert(int i)   //ÓÚ¸ø¶¨Î»ÖÃÌí¼ÓÒ»¸öÖµÎªÄ¬ÈÏµÄ½Úµã£¬ÆäËûÖµË³ÑÓ
+{
+	link<T> *p = new link<T>;
 	link<T> *pPre;
 
 	int z = size() - 1;
@@ -413,6 +455,10 @@ template <typename T> const bool linkedlist<T>::operator!=(const linkedlist<T>& 
 	return (!operator==(list));
 }
 
+template <typename T> T& linkedlist<T>::operator[](int i)              //ÖØÔØÏÂ±êÔËËã·û£¬Ê¹ÆäÄÜÏñÊı×éÒ»Ñù·ÃÎÊ
+{
+	return pNode(i)->Value;
+}
 
 template <typename T>  link<T>*linkedlist<T>::pNode(int i)           //·µ»ØÖ¸ÏòÌØ¶¨½ÚµãµÄÖ¸Õë
 {

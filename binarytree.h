@@ -6,7 +6,7 @@
 //这里的二叉树和链表一样，一棵二叉树是一个完整的储存结构，其"子树"除非使用SubTree重新生成，否则并不是一棵储存意义上的树
 //==============================================
 #pragma once
-#define DEBUGMODE true
+#define _BINARYTREE_H
 
 #include <stack>
 #include <queue>
@@ -28,8 +28,7 @@ private:
 	BinaryTreeNode<T> *LeftChild;
 	BinaryTreeNode<T> *RightChild;
 	BinaryTree<T> *Tree;                      //仅根节点有效，指向所在的树
-
-	int Order;
+public:
     //====================函数声明======================
 	BinaryTreeNode();                         //构造函数
 	BinaryTreeNode(const T&);                 //构造函数
@@ -63,9 +62,9 @@ private:
 	void SetParent(BinaryTreeNode<T>*, const Childpos = pos_def);          //设置父节点
 	void Swap(BinaryTreeNode<T>*, bool = false);                           //与特定节点交换,可设定是否与子节点一起交换
 
-	const bool AddLeftChild(const T&);                         //增加给定值的左右子节点，返回是否添加成功
-	const bool AddRightChild(const T&);                        
-	const bool AddChild(const T&, Childpos = pos_def);         
+	BinaryTreeNode<T>* AddLeftChild(const T&);                         //增加给定值的左右子节点，返回是否添加成功
+	BinaryTreeNode<T>* AddRightChild(const T&);
+	BinaryTreeNode<T>* AddChild(const T&, Childpos = pos_def);
 };
 
 template <typename T> class BinaryTree
@@ -88,10 +87,11 @@ public:
 	   
 	const int size();
 	const bool empty() const;                   //是否为空树
-	const bool height();                        //高度
+	const int height();                         //高度
 	BinaryTreeNode<T> *root() const;            //指向根节点的指针，没有则返回NULL
     BinaryTreeNode<T> *node(int) ;              //默认周游次序下的指定节点
 	const T& value(int);
+	T& operator[](int);
 
 	void SetRoot(BinaryTreeNode<T>&);          //设置根节点
 	void SetValue(int, const T&);                  //
@@ -100,7 +100,7 @@ public:
 	//周游二叉树
 	TreeOrder treeorder() const;
 	void SetTreeOrder(const TreeOrder);
-	void ForTree(void(*)(BinaryTreeNode<T>&));    //根据设定次序周游 
+	void ForTree(void(*func1)(BinaryTreeNode<T>&));    //根据设定次序周游 
 	void DoOrder();                               //进行排序
 };
 
@@ -112,7 +112,6 @@ template <typename T> BinaryTreeNode<T>::BinaryTreeNode()  //构造函数
 	RightChild = NULL;
 	Parent = NULL;
 	Tree = NULL;
-	Order = -1;
 }
 template <typename T> BinaryTreeNode<T>::BinaryTreeNode(const T& t) //构造函数
 {
@@ -121,7 +120,6 @@ template <typename T> BinaryTreeNode<T>::BinaryTreeNode(const T& t) //构造函数
 	RightChild = NULL;
 	Parent = NULL;
 	Tree = NULL;
-	Order = -1;
 }
 
 template <typename T> BinaryTreeNode<T>::BinaryTreeNode(const BinaryTreeNode<T>& t) //拷贝构造函数
@@ -131,11 +129,14 @@ template <typename T> BinaryTreeNode<T>::BinaryTreeNode(const BinaryTreeNode<T>&
 	RightChild = NULL;
 	Parent = NULL;
 	Tree = NULL;
-	Order = -1;
 }
 
 template <typename T> BinaryTreeNode<T>::~BinaryTreeNode()  //析构函数
 {
+#ifdef DEBUGMODE
+	void *p = this;
+#endif
+
 	if (LeftChild != NULL) LeftChild->Parent = NULL;
 	if (RightChild != NULL) RightChild->Parent = NULL;
 	if (Parent != NULL)
@@ -143,6 +144,11 @@ template <typename T> BinaryTreeNode<T>::~BinaryTreeNode()  //析构函数
 		if (Parent->LeftChild == this) Parent->LeftChild = NULL;
 		if (Parent->RightChild == this) Parent->RightChild = NULL;
 	}
+	if (tree() != NULL) tree()->WellOrdered = false;
+	LeftChild = NULL;
+	RightChild = NULL;
+	Parent = NULL;
+	Tree = NULL;
 }
 
 template <typename T> inline const T& BinaryTreeNode<T>::value() const                                 //返回值
@@ -252,8 +258,12 @@ template <typename T> inline BinaryTree<T>* BinaryTreeNode<T>::tree() const     
 template <typename T> inline int BinaryTreeNode<T>::order() const                             //确定在树中的次序
 {
 	if (tree() == NULL) return -1;
-	if (tree()->WellOrderd == false) Tree->DoOrder();
-	return Order;
+	if (tree()->WellOrdered == false) Tree->DoOrder();
+	for (int i = 0; i < tree()->size(); i++)
+	{
+		if (tree()->node(i) == this) return i;
+	}
+	return -1;
 }
 
 
@@ -460,26 +470,26 @@ template <typename T> void BinaryTreeNode<T>::Swap(BinaryTreeNode<T>* p, bool wi
 	}
 }
 
-template <typename T> const bool  BinaryTreeNode<T>::AddChild(const T& t, const Childpos pos)                            //增加给定值的左右子节点,返回是否添加成功
+template <typename T> BinaryTreeNode<T>* BinaryTreeNode<T>::AddChild(const T& t, const Childpos pos)                            //增加给定值的左右子节点,返回是否添加成功
 {
 	BinaryTreeNode<T> *child;
 
 	switch (pos)
 	{
 		case pos_left:
-		    if (LeftChild != NULL) return false;
+		    if (LeftChild != NULL) return NULL;
 			child = new BinaryTreeNode<T>(t);
 			child->Parent = this;
 			LeftChild = child;
 			if (tree() != NULL) tree()->WellOrdered == false;
-			return true;
+			return LeftChild;
 		case pos_right:
-			if (RightChild != NULL) return false;
+			if (RightChild != NULL) return NULL;
 			child = new BinaryTreeNode<T>(t);
 			child->Parent = this;
 			RightChild = child;
 			if (tree() != NULL) tree()->WellOrdered == false;
-			return true;
+			return RightChild;
 		case pos_def:
 			if (LeftChild == NULL)
 			{
@@ -487,7 +497,7 @@ template <typename T> const bool  BinaryTreeNode<T>::AddChild(const T& t, const 
 				child->Parent = this;
 				LeftChild = child;
 				if (tree() != NULL) tree()->WellOrdered == false;
-				return true;
+				return LeftChild;
 			}
 			else if (RightChild == NULL)
 			{
@@ -495,36 +505,34 @@ template <typename T> const bool  BinaryTreeNode<T>::AddChild(const T& t, const 
 				child->Parent = this;
 				RightChild = child;
 				if (tree() != NULL) tree()->WellOrdered == false;
-				return true;
+				return RightChild;
 			}
 	}
-	return false;
+	return NULL;
 }
 
-template <typename T> const bool  BinaryTreeNode<T>::AddLeftChild(const T& t)                            //增加给定值的左子节点,返回是否添加成功
+template <typename T> BinaryTreeNode<T>*  BinaryTreeNode<T>::AddLeftChild(const T& t)                            //增加给定值的左子节点,返回是否添加成功
 {
 	BinaryTreeNode<T> *child;
 
-	if (LeftChild != NULL) return false;
+	if (LeftChild != NULL) return NULL;
 	child = new BinaryTreeNode<T>(t);
 	child->Parent = this;
 	LeftChild = child;
-	return true;
-
 	if (tree() != NULL) tree()->WellOrdered = false;
+	return LeftChild;
 }
 
-template <typename T> const bool  BinaryTreeNode<T>::AddRightChild(const T& t)                            //增加给定值的右子节点,返回是否添加成功
+template <typename T> BinaryTreeNode<T>*  BinaryTreeNode<T>::AddRightChild(const T& t)                            //增加给定值的右子节点,返回是否添加成功
 {
 	BinaryTreeNode<T> *child;
 
-	if (RightChild != NULL) return false;
+	if (RightChild != NULL) return NULL;
 	child = new BinaryTreeNode<T>(t);
 	child->Parent = this;
 	RightChild = child;
-	return true;
-
 	if (tree() != NULL) tree()->WellOrdered = false;
+	return RightChild;
 }
 
 //================================================================================
@@ -557,21 +565,23 @@ template <typename T> BinaryTree<T>::BinaryTree(const std::initializer_list<T>& 
 {
 	//创建的为完全二叉树
 	BinaryTree<T>*p1 = this;  //可用时删除
-	BinaryTreeNode<T> *Node;
+	BinaryTreeNode<T> **Node;
 	Size = list.size();
 	Order = order_def;
 	Root = NULL;
 	if (Size == 0) return;
 
-	Node = new BinaryTreeNode<T>[Size];
+	Node = new BinaryTreeNode<T>*[Size];
+	for (int i = 0; i < Size; i++) Node[i] = new BinaryTreeNode<T>;
 	auto p = list.begin();
 	for (int i=0; i < Size; i++)
 	{
-		Node[i].SetValue((T&)p[i]);
-		if (2 * i + 1 < Size) Node[i].SetLeftChild(&(Node[2 * i + 1]));          //to change
-		if (2 * i + 2 < Size) Node[i].SetRightChild(&(Node[2 * i + 2]));
+		Node[i]->SetValue((T&)p[i]);
+		if (2 * i + 1 < Size) Node[i]->SetLeftChild(Node[2 * i + 1]);          //to change
+		if (2 * i + 2 < Size) Node[i]->SetRightChild(Node[2 * i + 2]);
 	}
-	this->Root = Node;
+	this->Root = Node[0];
+	Node[0]->Tree = this;
 	WellOrdered = false;
 }
 
@@ -587,7 +597,7 @@ template <typename T> BinaryTree<T>::BinaryTree(const linkedlist<T>& list)      
 	Node = new BinaryTreeNode<T>[Size];
 	for (int i = 0; i < Size; i++)
 	{
-		Node[i].SetValue(list.value(i));
+		Node[i].SetValue(list[i]);
 		if (2 * i + 1 < Size) Node[i].SetLeftChild(Node[2 * i + 1]);
 		if (2 * i + 2 < Size) Node[i].SetRightChild(Node[2 * i + 2]);
 	}
@@ -598,8 +608,8 @@ template <typename T> BinaryTree<T>::BinaryTree(const linkedlist<T>& list)      
 template <typename T> BinaryTree<T>::BinaryTree(BinaryTreeNode<T>& Node)             //根据节点及其子节点创建树
 {
 	dpointer<BinaryTreeNode<T>>  p, pNext;
-	stack<dpointer<BinaryTreeNode<T>>> stk;
-
+	std::stack<dpointer<BinaryTreeNode<T>>> stk;
+	
 	Root = new BinaryTreeNode<T>(Node);                       //首先复制根节点
 	p.p1 = &Node;
 	p.p2 = Root;
@@ -635,14 +645,15 @@ template <typename T> BinaryTree<T>::BinaryTree(BinaryTreeNode<T>& Node)        
 
 template <typename T> BinaryTree<T>::~BinaryTree()                                   //析构函数
 {
+	if (WellOrdered == false) DoOrder();
 	for (int i = Size - 1; i >= 0; i--) delete node(i);
 
 }
 
 template <typename T> void BinaryTree<T>::DoOrder()                                   //排序
 {
-	queue<BinaryTreeNode<T>*> que;
-	stack<BinaryTreeNode<T>*> stk;
+	std::queue<BinaryTreeNode<T>*> que;
+	std::stack<BinaryTreeNode<T>*> stk;
 	BinaryTreeNode<T> *p;
 	if (WellOrdered) return;
 	Size = 0;
@@ -659,7 +670,6 @@ template <typename T> void BinaryTree<T>::DoOrder()                             
 			p = que.front();
 			que.pop();
 			OrderList.Append(p);
-			p->Order = Size;
 			Size++;
 			if (p->LeftChild != NULL) que.push(p->LeftChild);
 			if (p->RightChild != NULL) que.push(p->RightChild);
@@ -672,7 +682,6 @@ template <typename T> void BinaryTree<T>::DoOrder()                             
 			while (p != NULL)
 			{
 				OrderList.Append(p);
-				p->Order = Size;
 				Size++;
 				if (p->RightChild != NULL) stk.push(p->RightChild);
 				p = p->LeftChild;
@@ -698,7 +707,6 @@ template <typename T> void BinaryTree<T>::DoOrder()                             
 			stk.pop();
 
 			OrderList.Append(p);
-			p->Order = Size;
 			Size++;
 			p = p->RightChild;
 		}while ((p != NULL) || (!stk.empty()));
@@ -721,10 +729,6 @@ template <typename T> void BinaryTree<T>::DoOrder()                             
 			}
 		}
 		OrderList.Turn();
-		for (int i = 0; i < Size; i++)
-		{
-			OrderList.value(i)->Order = i;
-		}
 		break;
 	}
 
@@ -742,14 +746,14 @@ template <typename T> const bool BinaryTree<T>::empty() const                   
 {
 	return (Root == false);
 } 
-template <typename T> const bool BinaryTree<T>::height()                       //高度
+template <typename T> const int BinaryTree<T>::height()                       //高度
 {
 	int maxheight = 0;
 	int h1;
 	if (WellOrdered == false) DoOrder();
 	for (int i = 0; i < Size; i++)
 	{
-		h1 = value(i)->depth();
+		h1 = node(i)->depth();
 		if (h1 > maxheight) maxheight = h1;
 	}
 	return maxheight;
@@ -761,14 +765,23 @@ template <typename T> BinaryTreeNode<T> *BinaryTree<T>::root() const      //指向
 template <typename T> BinaryTreeNode<T> *BinaryTree<T>::node(int i)       //默认周游次序下的指定节点
 {
 	if (WellOrdered == false) DoOrder();
-	return OrderList.value(i);
+#ifdef DEBUGMODE
+	if ((i < 0) || (i >= size())) throw "下标超限";
+#endif
+	return OrderList[i];
 }
 template <typename T> const T& BinaryTree<T>::value(int i)
 {
 	if (WellOrdered == false) DoOrder();
-	return OrderList.value(i)->Value;
+	return OrderList[i]->Value;
 }
 
+template <typename T> T& BinaryTree<T>::operator[](int i)
+{
+	if (WellOrdered == false) DoOrder();
+	if ((i < 0) || (i >= Size)) throw "下标溢出";
+	return OrderList[i]->Value;
+}
 
 template <typename T> void BinaryTree<T>::SetRoot(BinaryTreeNode<T>& t)   //设置根节点
 {
@@ -782,14 +795,14 @@ template <typename T> void BinaryTree<T>::SetRoot(BinaryTreeNode<T>& t)   //设置
 template <typename T> void BinaryTree<T>::SetValue(int i, const T& t)   //设置根节点
 {
 	if (WellOrdered == false) DoOrder();
-	OrderList.value(i)->Value = t;
+	OrderList[i]->Value = t;
 }
 template <typename T> void BinaryTree<T>::Clear()                   //清空树
 {
 	if (Root == NULL) return;
 	for (int i = 0;i <= Size; i++)
 	{
-		delete OrderList.value(i);
+		delete OrderList[i];
 	}
 	WellOrdered = false;
 }
@@ -809,7 +822,7 @@ template <typename T> void BinaryTree<T>::ForTree(void(*func1)(BinaryTreeNode<T>
 	if (WellOrdered = false) DoOrder();
 	for (int i = 0; i < Size; i++)
 	{
-		p = OrderList.value(i);
+		p = OrderList[i];
 		func1(*p);
 	}
 }
